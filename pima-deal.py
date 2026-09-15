@@ -1,5 +1,5 @@
 # ======================
-# 糖尿病风险预警 - 最终完整版（修复版）
+# pima
 # ======================
 import pandas as pd
 import numpy as np
@@ -13,6 +13,8 @@ import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import xgboost as xgb
+import lightgbm as lgb
 
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
@@ -23,11 +25,11 @@ from sklearn.metrics import (roc_auc_score, accuracy_score, precision_score,
                              recall_score, f1_score, confusion_matrix,
                              classification_report, roc_curve, auc)
 
-import xgboost as xgb
-import lightgbm as lgb
+os.makedirs('figures', exist_ok=True)
+os.makedirs('results', exist_ok=True)
+os.makedirs('models', exist_ok=True)
 
-# 设置中文
-plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Helvetica']
 plt.rcParams['axes.unicode_minus'] = False
 os.makedirs('C:\\temp', exist_ok=True)
 os.environ['TEMP'] = 'C:\\temp'
@@ -35,12 +37,8 @@ os.environ['TMP'] = 'C:\\temp'
 warnings.filterwarnings('ignore')
 
 print("=" * 80)
-print("糖尿病风险预警模型 - 最终完整版（含全部优化）")
+print("糖尿病风险预警模型")
 print("=" * 80)
-
-os.makedirs('../统计建模/figures', exist_ok=True)
-os.makedirs('../统计建模/models', exist_ok=True)
-os.makedirs('../统计建模/results', exist_ok=True)
 
 # ======================
 # 1. 数据读取与特征工程
@@ -105,17 +103,19 @@ models = {}
 
 # LR
 lr = LogisticRegression(max_iter=3000, random_state=42, class_weight='balanced')
-lr_grid = GridSearchCV(lr, {'C': [0.01, 0.1, 1, 2]}, cv=5, scoring='roc_auc', n_jobs=1)
-lr_grid.fit(X_train_scaled_sel, y_train)
+lr_params = {'C': [0.01, 0.05, 0.1, 0.5, 1, 2]}
+lr_grid = GridSearchCV(lr, lr_params, cv=5, scoring='roc_auc', n_jobs=1)
+lr_grid.fit(X_train_scaled_sel, y_train)  # 添加训练
 models['LR'] = lr_grid.best_estimator_
-print(f"  LR 完成: C={lr_grid.best_estimator_.C}")
+print(f"  LR 完成: C={lr_grid.best_estimator_.C:.2f}")
 
 # RF
 rf = RandomForestClassifier(random_state=42, class_weight='balanced', n_jobs=1)
-rf_grid = GridSearchCV(rf, {'n_estimators': [100, 200], 'max_depth': [7, 10]}, cv=5, scoring='roc_auc', n_jobs=1)
-rf_grid.fit(X_train_sel, y_train)
+rf_params = {'n_estimators': [100, 200], 'max_depth': [7, 10], 'min_samples_split': [2, 5]}
+rf_grid = GridSearchCV(rf, rf_params, cv=5, scoring='roc_auc', n_jobs=1)
+rf_grid.fit(X_train_scaled_sel, y_train)  # 添加训练
 models['RF'] = rf_grid.best_estimator_
-print(f"  RF 完成: estimators={rf_grid.best_estimator_.n_estimators}")
+print(f"  RF 完成: depth={rf_grid.best_estimator_.max_depth}")
 
 # XGB
 scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
@@ -136,10 +136,11 @@ print(f"  LGB 完成")
 
 # SVM
 svm = SVC(probability=True, random_state=42, class_weight='balanced')
-svm_grid = GridSearchCV(svm, {'C': [0.5, 1, 2], 'gamma': ['scale']}, cv=5, scoring='roc_auc', n_jobs=1)
-svm_grid.fit(X_train_scaled_sel, y_train)
+svm_params = {'C': [0.5, 1, 2], 'gamma': ['scale', 'auto']}
+svm_grid = GridSearchCV(svm, svm_params, cv=5, scoring='roc_auc', n_jobs=1)
+svm_grid.fit(X_train_scaled_sel, y_train)  # SVM使用标准化数据
 models['SVM'] = svm_grid.best_estimator_
-print(f"  SVM 完成: C={svm_grid.best_estimator_.C}")
+print(f"  SVM 完成: C={svm_grid.best_estimator_.C:.2f}")
 
 # ======================
 # 5. 集成模型
@@ -177,7 +178,7 @@ def evaluate_model_with_threshold(model, X_test_data, y_test, use_scaled, X_test
 
     best_f2 = 0
     best_thr = 0.3
-    for thr in np.arange(0.15, 0.6, 0.05):
+    for thr in np.arange(0.10, 0.71, 0.05):
         yp = (y_prob > thr).astype(int)
         r = recall_score(y_test, yp)
         p = precision_score(y_test, yp)
@@ -259,7 +260,7 @@ risk_levels = [risk_level(p) for p in best_prob]
 cm = confusion_matrix(y_test, y_pred_best)
 
 # ======================
-# 9. SHAP可解释性（修复版）
+# 9. SHAP可解释性
 # ======================
 print("\n  生成 SHAP 可解释性分析...")
 
@@ -361,22 +362,20 @@ roc_auc = auc(fpr, tpr)
 plt.figure(figsize=(8, 6))
 plt.plot(fpr, tpr, 'b-', linewidth=2, label=f'{best_model_name} (AUC={roc_auc:.3f})')
 plt.plot([0, 1], [0, 1], 'r--', linewidth=1.5, label='Random Classifier')
-plt.xlabel('假阳性率 (1 - 特异度)', fontsize=12)
-plt.ylabel('真阳性率 (敏感度)', fontsize=12)
-plt.title('ROC曲线', fontsize=14)
+plt.xlabel('False Positive Rate (1 - Specificity)', fontsize=12)
+plt.ylabel('True Positive Rate (Sensitivity)', fontsize=12)
+plt.title('ROC Curve-pima', fontsize=14)
 plt.legend(loc='lower right')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig('figures/roc_curve.png', dpi=300)
 plt.close()
-print("  ✅ ROC曲线已保存: figures/roc_curve.png")
+print("  ✅ ROC曲线已保存: figures-pima/roc_curve.png")
 
 # ======================
 # 13. 生成决策曲线
 # ======================
 print("\n  生成 决策曲线分析(DCA)...")
-
-
 def net_benefit(y_true, y_prob, threshold):
     y_pred = (y_prob > threshold).astype(int)
     tp = np.sum((y_true == 1) & (y_pred == 1))
@@ -398,9 +397,10 @@ plt.figure(figsize=(8, 6))
 plt.plot(thresholds_dca, nb_model, 'b-', linewidth=2, label='本研究模型')
 plt.plot(thresholds_dca, nb_all, 'g--', linewidth=1.5, label='全部干预')
 plt.plot(thresholds_dca, nb_none, 'r--', linewidth=1.5, label='不干预')
-plt.xlabel('风险阈值', fontsize=12)
-plt.ylabel('净获益', fontsize=12)
-plt.title('临床决策曲线分析 (DCA)', fontsize=14)
+plt.xlabel('Risk Threshold', fontsize=12)
+plt.ylabel('Net Benefit', fontsize=12)
+plt.title('Decision Curve Analysis (DCA)', fontsize=14)
+plt.legend(['Our Model', 'Treat All', 'Treat None'], loc='upper right')
 plt.legend(loc='upper right')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -455,16 +455,6 @@ F2分数：{res_df.iloc[0]['F2']:.3f}
 高风险（0.5-0.75）：  {risk_counts.get('高风险', 0)} 例
 极高风险（≥0.75）：   {risk_counts.get('极高风险', 0)} 例
 
-{'=' * 60}
-【临床建议】
-{'=' * 60}
-• 低风险人群：建议常规体检，保持健康生活方式
-• 中风险人群：建议生活方式干预，控制饮食和运动
-• 高风险人群：建议进一步糖耐量检查（OGTT）
-• 极高风险人群：建议立即就医，进行糖尿病确诊检查
-
-{'=' * 60}
-【注意事项】
 {'=' * 60}
 • 本预测结果仅供参考，不能替代医生诊断
 • 建议结合临床症状和实验室检查综合判断
@@ -551,7 +541,7 @@ print("🎉 全部运行完成！")
 print("=" * 80)
 
 # ======================
-# 修正版：使用各模型自己的最优阈值进行对比
+# 使用各模型自己的最优阈值进行对比
 # ======================
 
 print("\n" + "=" * 80)
@@ -573,7 +563,7 @@ for name, model in models.items():
     # 为每个模型单独寻找最优阈值（以F2分数为目标）
     best_f2 = 0
     best_thr = 0.5
-    for thr in np.arange(0.15, 0.6, 0.05):
+    for thr in np.arange(0.10, 0.71, 0.05):
         yp = (y_prob > thr).astype(int)
         r = recall_score(y_test, yp)
         p = precision_score(y_test, yp)
@@ -613,11 +603,9 @@ for name, model in models.items():
         '误诊数': fp
     })
 
-# 转换为DataFrame并排序
 comparison_df = pd.DataFrame(comparison_data)
 comparison_df = comparison_df.sort_values('F2分数', ascending=False)
 
-# 打印详细对比表
 print("\n【Pima数据集各模型详细性能对比表（各模型使用各自最优阈值）】")
 print("-" * 110)
 print(f"{'模型名称':<15} {'最优阈值':<8} {'AUC':<8} {'召回率':<8} {'精确率':<8} {'F2分数':<8} {'漏诊数':<6}")
@@ -782,9 +770,6 @@ def threshold_sensitivity_analysis(
 
     return df
 
-# ======================
-# 调用示例（Pima数据集）
-# ======================
 threshold_df_pima = threshold_sensitivity_analysis(
     y_true=y_test,
     y_prob=best_prob,
@@ -792,10 +777,6 @@ threshold_df_pima = threshold_sensitivity_analysis(
     dataset_name='Pima',
     output_dir='results'
 )
-
-# ============================================================
-# 在 pima-deal.py 末尾导入工具包并调用
-# ============================================================
 
 # 确保 analysis_utils.py 在同一目录下
 from analysis_utils import (
@@ -806,9 +787,6 @@ from analysis_utils import (
     generate_performance_summary
 )
 
-# ============================================================
-# 配置参数（统一在此修改）
-# ============================================================
 CONFIG = {
     'output_dir': 'results',              # 所有结果输出目录
     'threshold_start': 0.10,              # 阈值分析起始值
