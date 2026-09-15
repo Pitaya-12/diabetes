@@ -1,6 +1,5 @@
 # ======================
-# 中国糖尿病数据集 - 完整建模（与Pima流程一致）
-# 用于论文对比分析
+# Chinese diabetes
 # ======================
 import pandas as pd
 import numpy as np
@@ -22,8 +21,7 @@ from sklearn.metrics import (roc_auc_score, accuracy_score, precision_score,
 import xgboost as xgb
 import lightgbm as lgb
 
-# 设置中文
-plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Helvetica']
 plt.rcParams['axes.unicode_minus'] = False
 os.makedirs('C:\\temp', exist_ok=True)
 os.environ['TEMP'] = 'C:\\temp'
@@ -45,6 +43,7 @@ print("\n【1/7】数据读取与清洗...")
 
 df = pd.read_csv("diabetes.csv")
 
+
 # 查看数据基本信息
 print(f"原始数据形状: {df.shape}")
 print(f"特征列表: {df.columns.tolist()}")
@@ -57,21 +56,41 @@ for col in df.columns:
             print(f"  {col}: 发现 {(df[col] == 4.860753).sum()} 个异常值(4.860753)，将替换为NaN")
             df[col] = df[col].replace(4.860753, np.nan)
 
-# 缺失值处理：用中位数填充
-print("\n缺失值统计:")
+# ============================================================
+# 数据清洗与质控（先剔除，后填充）
+# ============================================================
+
+# 1. 剔除超出生理范围的极端值
+df = df[df['BMI'] > 10]          # 剔除BMI≤10
+df = df[df['BMI'] < 60]          # 剔除BMI≥60（新增）
+df = df[df['FPG'] > 2.8]         # 剔除空腹血糖≤2.8（新增）
+df = df[df['SBP'] > 0]           # 剔除收缩压异常值
+df = df[df['DBP'] > 0]           # 剔除舒张压异常值
+df = df[df['Age'] >= 18]         # 排除年龄＜18岁（新增）
+
+# 2. 剔除核心指标缺失严重的样本（缺失≥3个核心字段则剔除）
+core_cols = ['FPG', 'BMI', 'Age', 'SBP', 'DBP', 'Chol']
+df = df[df[core_cols].isnull().sum(axis=1) < 3]
+
+# 3. 箱线图法（IQR×1.5）识别并剔除指标分布异常集中样本
+# 这一步如果数据量不大可以保留，但如果剔除太多可以放宽
+for col in ['BMI', 'FPG', 'Age', 'SBP', 'DBP', 'Chol']:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+
+# 4. 缺失值处理：剩余缺失值用中位数填充
+print("\n质控后缺失值统计:")
 print(df.isnull().sum())
 for col in df.columns:
     if df[col].dtype in ['float64', 'int64']:
         median_val = df[col].median()
         df[col] = df[col].fillna(median_val)
 
-# 剔除异常值
-df = df[df['BMI'] > 10]  # 剔除BMI异常值
-df = df[df['SBP'] > 0]   # 剔除收缩压异常值
-df = df[df['DBP'] > 0]   # 剔除舒张压异常值
-
-# 查看目标变量分布
-print(f"\n清洗后数据形状: {df.shape}")
+print(f"\n质控后数据形状: {df.shape}")
 print(f"患病样本: {df['Diabetes'].sum()}例 ({df['Diabetes'].mean()*100:.1f}%)")
 print(f"未患病样本: {(df['Diabetes']==0).sum()}例")
 print(f"性别分布: 男={df[df['Gender']==1].shape[0]}人, 女={df[df['Gender']==2].shape[0]}人")
@@ -361,9 +380,9 @@ roc_auc = auc(fpr, tpr)
 plt.figure(figsize=(8, 6))
 plt.plot(fpr, tpr, 'b-', linewidth=2, label=f'{best_model_name} (AUC={roc_auc:.3f})')
 plt.plot([0, 1], [0, 1], 'r--', linewidth=1.5, label='Random Classifier')
-plt.xlabel('假阳性率 (1 - 特异度)', fontsize=12)
-plt.ylabel('真阳性率 (敏感度)', fontsize=12)
-plt.title('ROC曲线 - 中国人群数据', fontsize=14)
+plt.xlabel('False Positive Rate (1 - Specificity)', fontsize=12)
+plt.ylabel('True Positive Rate (Sensitivity)', fontsize=12)
+plt.title('ROC Curve - Chinese Clinical Cohort', fontsize=14)
 plt.legend(loc='lower right')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -440,13 +459,10 @@ print("=" * 80)
 
 
 # ======================
-# 阈值敏感性分析（修复版）
+# 阈值敏感性分析
 # ======================
 def threshold_sensitivity_analysis(y_true, y_prob, model_name, dataset_name,
                                    thresholds=None, save_dir='results'):
-    """
-    在0.1~0.7区间每隔0.05取阈值，输出AUC、召回率、特异度、漏诊率、F2分数、净获益
-    """
     if thresholds is None:
         thresholds = np.arange(0.10, 0.71, 0.05)
 
@@ -508,25 +524,24 @@ def threshold_sensitivity_analysis(y_true, y_prob, model_name, dataset_name,
                 label=f'当前阈值={best_thr:.2f}')
     ax1.axvline(x=df.loc[best_f2_idx, 'Threshold'], color='orange', linestyle=':', linewidth=2,
                 label=f'F2最优阈值={df.loc[best_f2_idx, "Threshold"]:.2f}')
-    ax1.set_xlabel('阈值', fontsize=12)
-    ax1.set_ylabel('指标值', fontsize=12)
-    ax1.set_title(f'{dataset_name} - 阈值-性能曲线', fontsize=13, fontweight='bold')
+    ax1.set_xlabel('Threshold', fontsize=12)
+    ax1.set_ylabel('Metric Value', fontsize=12)
+    ax1.set_title(f'{dataset_name} - Threshold-Performance Curve', fontsize=13, fontweight='bold')
     ax1.legend(loc='best')
     ax1.grid(True, alpha=0.3)
     ax1.set_ylim(0, 1.05)
 
-    # 右图：F2分数和净获益（修复颜色格式）
+
     ax2 = axes[1]
-    # 修复：将 'purple-o' 拆分为 color='purple', marker='o'
     ax2.plot(df['Threshold'], df['F2_Score'], color='purple', marker='o',
              linestyle='-', linewidth=2, markersize=6, label='F2分数')
     ax2.plot(df['Threshold'], df['Net_Benefit'], color='orange', marker='s',
              linestyle='-', linewidth=2, markersize=6, label='净获益')
     ax2.axvline(x=best_thr, color='purple', linestyle='--', linewidth=2,
                 label=f'当前阈值={best_thr:.2f}')
-    ax2.set_xlabel('阈值', fontsize=12)
-    ax2.set_ylabel('分数', fontsize=12)
-    ax2.set_title(f'{dataset_name} - F2分数与净获益曲线', fontsize=13, fontweight='bold')
+    ax2.set_xlabel('Threshold', fontsize=12)
+    ax2.set_ylabel('Score', fontsize=12)
+    ax2.set_title(f'{dataset_name} - F2 Score & Net Benefit Curve', fontsize=13, fontweight='bold')
     ax2.legend(loc='best')
     ax2.grid(True, alpha=0.3)
 
@@ -555,7 +570,7 @@ threshold_df_china = threshold_sensitivity_analysis(
 )
 
 # ============================================================
-# 在 chinese_deal.py 末尾导入并调用
+# chinese_deal.py 末尾导入并调用
 # ============================================================
 
 from analysis_utils import (
@@ -606,13 +621,39 @@ summary_china = generate_performance_summary(
     output_dir=CONFIG['output_dir']
 )
 
-# 4. 经济敏感性分析（使用您论文中的数据）
-cost_df = cost_sensitivity_analysis(
-    n_screen=1000,
-    prevalence=0.303,
-    baseline_miss_rate=0.132,
-    model_miss_rate=0.039,
-    baseline_fp_rate=0.057,
-    model_fp_rate=0.129,
-    output_dir=CONFIG['output_dir']
-)
+# ============================================================
+# 成本敏感性分析（1000人模拟）
+# ============================================================
+from sklearn.metrics import confusion_matrix
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred_best).ravel()  # 1291人真实数据
+
+N = 1000
+prevalence = (tp + fn) / len(y_test)        # = 0.303
+n_disease = round(N * prevalence)           # 303
+n_healthy = N - n_disease                   # 697
+
+# 模型：按真实率缩放到1000人
+model_fn = n_disease - round(tp/(tp+fn) * n_disease)   # 漏诊 = 303-291 = 12
+model_fp = round(fp/(fp+tn) * n_healthy)               # 误转 = 697×16.7% = 116
+model_tp = n_disease - model_fn                        # 正确检出 = 291
+
+# 传统筛查基线（假设值）
+baseline_fn, baseline_fp = 41, 57
+
+confirm_cost, complication_cost = 200, 30000   # 确认费200 / 并发症年费30000
+
+print(f"模拟{model_tp+model_fn}患病? 患病{n_disease} 模型: 检出{model_tp} 漏诊{model_fn} 误转{model_fp}")
+
+scenarios = {
+    '基线':        (confirm_cost,     complication_cost),
+    '并发症-30%':  (confirm_cost,     complication_cost*0.7),
+    '并发症+30%':  (confirm_cost,     complication_cost*1.3),
+    '检查费-50%':  (confirm_cost*0.5, complication_cost),
+    '检查费+50%':  (confirm_cost*1.5, complication_cost),
+    '双重极端(低)':(confirm_cost*0.5, complication_cost*0.7),
+    '双重极端(高)':(confirm_cost*1.5, complication_cost*1.3),
+}
+for name, (cc, comp) in scenarios.items():
+    base = baseline_fp*cc + baseline_fn*comp
+    model = model_fp*cc + model_fn*comp
+    print(f"{name:12s} 传统{base:>10,.0f}  模型{model:>9,.0f}  节约率{(base-model)/base*100:5.1f}%")
