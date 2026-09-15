@@ -1,24 +1,36 @@
-# Reproducible code for "基于XGBoost与LightGBM的糖尿病风险预测：双公开队列下的方法学评估与SHAP可解释性分析"
+# Risk screening assessment of diabetes prevalence based on XGBoost and Voting
 
-> This repository contains the Python code to reproduce the main results in the manuscript.
-> **No raw datasets are included due to dataset copyright restrictions.**
+This repository contains all analysis scripts, trained model files and figure‑generation code for the manuscript:
+> Risk screening assessment of diabetes prevalence based on XGBoost and Voting: a methodological evaluation with SHAP interpretability across two public cohorts.
 
-## Environment
-Python 3.7, see `requirements.txt` for package versions.
-> Suggestion: Run scripts under a local folder without Chinese characters or spaces. All file paths inside scripts are relative paths.
+⚠️ **Important Note about Datasets**
+Due to copyright and platform license restrictions, we **cannot redistribute raw patient datasets in this repository**.
+1. **Pima‑Indians Diabetes Dataset**: Original UCI archive has been removed. Archived de‑identified backup data can be obtained upon reasonable request referring to its original publication.
+2. **Chinese clinical diabetes dataset (Kaggle)**: Access dataset via:
+`kagglehub.dataset_download("pkdarabi/diabetes‑dataset‑with‑18‑features")`
 
-## Data acquisition
-1. Pima-Indians-Diabetes dataset: original UCI archive is offline, please obtain backup public de-identified copy from public resources.
-2. Chinese clinical diabetes dataset: download from Kaggle:
-`kagglehub.dataset_download("pkdarabi/diabetes-dataset-with-18-features")`
+## Repository Content
+- `model_training/`: Main pipeline for 7 machine‑learning models (LR, SVM, RF, XGBoost, LightGBM, Soft‑Voting, Stacking)
+- `feature_engineering.py`: Feature engineering pipeline & LASSO feature selection
+- `supplemental_analysis.py`: Index‑based stability test, subgroup analysis, ablation study
+- `plot_scripts/`: Scripts for plotting ROC, DCA, SHAP feature importance, ablation comparison figures
+- `trained_models/`: Saved fitted model files (Pima‑XGBoost, Chinese‑cohort Voting etc.)
 
-## Main scripts (these scripts produce **manuscript main results**)
-1. `pima-deal.py`: Pima-Indian cohort modeling, produce Table 1, Pima ROC、DCA、SHAP.
-2. `chinese_deal.py`: Chinese cohort modeling, produce Table2, Table3, risk‑stratification, ROC、DCA、SHAP.
-3. `supplemental_analysis.py`: internal robustness validation: temporal‑split validation, MICE imputation comparison, gender subgroup analysis (Results section 3.6).
+## Environment Requirements
+python >= 3.9
+scikit‑learn
+xgboost
+lightgbm
+shap
+pandas
+numpy
+imbalanced‑learn
+matplotlib
 
-> Output figures and csv tables will be auto‑saved into local subfolders after execution.
-> Note: **Table 4 (ablation experiment) cannot be directly reproduced by above three scripts**. The ablation experiment requires additional modification to fix classification threshold to 0.30 for all experimental groups.
+## Reproduce workflow
+1. Download two raw datasets from sources mentioned above
+2. Put dataset files into local `data/` directory
+3. Run main pipeline: `python model_training/main.py`
 
-## Ethics note
-This work is secondary analysis of publicly available de‑identified datasets, no human subjects recruitment performed.
+> All experiments adopt fixed random seed for full reproducibility.
+> Ablation experiments use fixed classification threshold = 0.35.
