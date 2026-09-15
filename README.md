@@ -1,3 +1,26 @@
+# Risk screening assessment of diabetes prevalence based on XGBoost and Voting
+This repository contains all analysis scripts for the manuscript:
+*Risk screening assessment of diabetes prevalence based on XGBoost and Voting: a methodological evaluation with SHAP interpretability across two public cohorts.*
+
+## File Description
+| Filename | Description |
+| ---- | ---- |
+| `pima‑deal.py` | Data preprocessing, model training and evaluation for Pima‑Indians Diabetes cohort |
+| `chinese_deal.py` | Data preprocessing, model training and evaluation for Chinese clinical diabetes cohort |
+| `supplemental_analysis.py` | Supplementary analysis: index‑based internal stability test, subgroup analysis, ablation study, DCA and SHAP interpretability analysis |
+| `README.md` | This document |
+
+> ⚠️ Important Note: **Raw patient datasets are NOT included in this repository**. Redistribution of original data is prohibited by copyright and dataset license terms.
+
+### How to obtain datasets
+1. **Pima‑Indians Diabetes Dataset**
+The original UCI archive has been removed. De‑identified backup data can be obtained upon reasonable request with reference to the original publication (Smith JW, et al., 1988).
+
+2. **Chinese clinical diabetes dataset (Kaggle)**
+Download via kagglehub:
+```python
+kagglehub.dataset_download("pkdarabi/diabetes‑dataset‑with‑18‑features")
+
 # 基于XGBoost与Voting的糖尿病患病风险筛查评估
 Risk screening assessment of diabetes prevalence based on XGBoost and Voting
 
@@ -19,29 +42,5 @@ Risk screening assessment of diabetes prevalence based on XGBoost and Voting
 
 2. **中国临床糖尿病数据集（Kaggle）**
 可通过 kagglehub 下载：
-```python
-kagglehub.dataset_download("pkdarabi/diabetes‑dataset‑with‑18‑features")
-
-
-# Risk screening assessment of diabetes prevalence based on XGBoost and Voting
-This repository contains all analysis scripts for the manuscript:
-*Risk screening assessment of diabetes prevalence based on XGBoost and Voting: a methodological evaluation with SHAP interpretability across two public cohorts.*
-
-## File Description
-| Filename | Description |
-| ---- | ---- |
-| `pima‑deal.py` | Data preprocessing, model training and evaluation for Pima‑Indians Diabetes cohort |
-| `chinese_deal.py` | Data preprocessing, model training and evaluation for Chinese clinical diabetes cohort |
-| `supplemental_analysis.py` | Supplementary analysis: index‑based internal stability test, subgroup analysis, ablation study, DCA and SHAP interpretability analysis |
-| `README.md` | This document |
-
-> ⚠️ Important Note: **Raw patient datasets are NOT included in this repository**. Redistribution of original data is prohibited by copyright and dataset license terms.
-
-### How to obtain datasets
-1. **Pima‑Indians Diabetes Dataset**
-The original UCI archive has been removed. De‑identified backup data can be obtained upon reasonable request with reference to the original publication (Smith JW, et al., 1988).
-
-2. **Chinese clinical diabetes dataset (Kaggle)**
-Download via kagglehub:
 ```python
 kagglehub.dataset_download("pkdarabi/diabetes‑dataset‑with‑18‑features")
