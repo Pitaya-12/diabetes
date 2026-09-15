@@ -29,7 +29,7 @@ os.environ['TMP'] = 'C:\\temp'
 warnings.filterwarnings('ignore')
 
 print("=" * 80)
-print("中国糖尿病数据集 - 糖尿病风险预警模型（与Pima流程一致）")
+print("中国糖尿病数据集 - 糖尿病风险预警模型")
 print("=" * 80)
 
 os.makedirs('figures_china', exist_ok=True)
