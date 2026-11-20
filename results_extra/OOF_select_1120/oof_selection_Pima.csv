@@ -1,0 +1,5 @@
+﻿cohort,step,detail
+Pima,1,"第1级 recall>=0.92：保留 5 个模型 [LR, RF, XGBoost, Voting, Stacking]"
+Pima,2,第2级 最高F2：胜出 Stacking（OOF F2=0.7845，与次名差 0.0027）
+Pima,3,"最终选中：Stacking（OOF F2=0.7845, OOF Recall=0.9733, OOF 阈值=0.20）"
+Pima,0,selected_model=Stacking; oof_threshold=0.20; rule=recall>=0.92→maxF2→minFN→maxSpec

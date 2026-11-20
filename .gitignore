@@ -1,0 +1,8 @@
+# Kaggle 派生数据集不入库（论文 Data Availability: we do not redistribute its raw records）
+# 用 python build_clean.py 从自行下载的 Kaggle 文件重建
+diabetes.csv
+chinese_clean.csv
+
+# Python 缓存
+__pycache__/
+*.pyc

@@ -1,0 +1,5 @@
+﻿cohort,step,detail
+PUC,1,"第1级 recall>=0.92：保留 3 个模型 [RF, Voting, Stacking]"
+PUC,2,第2级 最高F2：胜出 Voting（OOF F2=0.8750，与次名差 0.0014）
+PUC,3,"最终选中：Voting（OOF F2=0.8750, OOF Recall=0.9394, OOF 阈值=0.25）"
+PUC,0,selected_model=Voting; oof_threshold=0.25; rule=recall>=0.92→maxF2→minFN→maxSpec

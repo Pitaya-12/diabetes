@@ -1,0 +1,3 @@
+model,single_ms_mean,single_ms_sd,batch100_ms_mean,batch100_ms_sd,model_size_mb,reps,iters_per_rep
+Pima XGBoost,1.372,0.007,1.492,0.049,0.11,3,1000
+PUC Voting,6.766,0.013,18.619,0.758,5.88,3,1000

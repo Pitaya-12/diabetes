@@ -1,0 +1,15 @@
+,0
+dca_max_nb,0.278
+shap_top3,FFPG > Age > Glucose_BMI
+n,1219
+model,Voting
+auc,0.965
+recall,0.925
+specificity,0.883
+ppv,0.759
+missed_rate,0.075
+tp,321
+fp,102
+fn,26
+tn,770
+prevalence,0.285

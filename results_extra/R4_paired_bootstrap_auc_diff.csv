@@ -1,0 +1,3 @@
+﻿comparison,point_diff_AUC,CI95_low,CI95_high,CI含0,n_boot
+Voting-LGB,0.0006,-0.0036,0.0051,True,2000
+Voting-Stacking,-0.0009,-0.0024,0.0006,True,2000

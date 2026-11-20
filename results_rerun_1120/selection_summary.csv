@@ -1,0 +1,3 @@
+﻿cohort,model,OOF_best_thr
+PUC,Voting,0.25
+Pima,Stacking,0.2

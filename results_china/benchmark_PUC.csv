@@ -1,0 +1,2 @@
+dataset,single_inference_ms,batch_inference_ms,batch_size,model_size_mb
+PUC,7.828,20.905,100,5.88

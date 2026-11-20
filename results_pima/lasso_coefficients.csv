@@ -1,0 +1,17 @@
+﻿feature,coef
+Pregnancies,0.062217390705550164
+Glucose,0.07635250338258275
+BloodPressure,-0.0
+SkinThickness,-0.0
+Insulin,0.0
+BMI,0.0
+DiabetesPedigreeFunction,0.0
+Age,0.0
+Glucose_BMI,0.15067873596591336
+Age_Pregnancies,0.0
+Insulin_Glucose_Ratio,0.0
+BMI_Age,0.01269451507627546
+SkinThickness_BMI,-0.0007382807597943797
+Metabolic_Risk,0.015310692980621094
+Insulin_Log,0.0
+DPF_Log,0.027069144999048604

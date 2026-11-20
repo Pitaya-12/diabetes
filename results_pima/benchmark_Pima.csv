@@ -1,0 +1,2 @@
+dataset,single_inference_ms,batch_inference_ms,batch_size,model_size_mb
+Pima,1.361,1.415,100,0.11
