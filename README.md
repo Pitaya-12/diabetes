@@ -1,5 +1,7 @@
 # Cross-cohort evaluation of machine-learning models for prevalent diabetes identification
 
+> Release note: v1.1.0 was deleted and is superseded by v1.1.1 (the Kaggle-derived data files were removed from the repository and its history).
+
 Analysis code and data for the manuscript:
 *Cross-cohort evaluation of machine-learning models for prevalent diabetes identification: ensemble selection, interpretability, and an empirically-documented caution regarding public clinical datasets*
 (PEERJ submission; code–text audit dated 2026-11-20)
@@ -23,6 +25,8 @@ Consistent with the manuscript's Data Availability statement, **no Kaggle-derive
    - positives 1,155 (28.4%); split 2,842 train / 1,219 test
 
 The regenerated `chinese_clean.csv` is bit-identical to the one used in the analysis (same QC code path as `2_中国数据建模.py`), and `split_indices_seed42.csv` lets you confirm your split matches exactly.
+
+`results_china/` contains model outputs and outcome labels only; no predictor values from the Kaggle source are included.
 
 ## 2. Main pipeline (run in order; working directory = repository root)
 
